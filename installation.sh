@@ -23,6 +23,11 @@ echo $(ls mels | wc -l)
 wget https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip
 unzip alignments.zip >> /dev/null
 
+#download weights
+wget https://dl.dropboxusercontent.com/s/kqgrr9h37uot367/checkpoint_180916.pth.tar?dl=0
+mkdir weights
+mv checkpoint_180916.pth.tar ./weights/checkpoint_180916.pth.tar
+
 # we will use waveglow code, data and audio preprocessing from this repo
 git clone https://github.com/xcmyz/FastSpeech.git
 mv FastSpeech/text .
