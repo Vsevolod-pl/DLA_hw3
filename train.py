@@ -7,10 +7,12 @@ from torch import nn
 from torch import optim
 
 import torchaudio
+from torch.utils.data import Dataset, DataLoader
 from torchaudio.transforms import MelSpectrogram
 from tqdm import tqdm
 import numpy as np
 
+import time
 import os
 import sys
 sys.path.append('.')
@@ -100,6 +102,10 @@ class TrainConfig:
     clear_Time = 20
 
     batch_expand_size = 32
+
+mel_config = MelSpectrogramConfig()
+model_config = FastSpeechConfig()
+train_config = TrainConfig()
 
 
 
@@ -321,11 +327,24 @@ training_loader = DataLoader(
 )
 
 
-    
 
-mel_config = MelSpectrogramConfig()
-model_config = FastSpeechConfig()
-train_config = TrainConfig()
+
+class FastSpeechLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse_loss = nn.MSELoss()
+        self.l1_loss = nn.L1Loss()
+
+    def forward(self, mel, duration_predicted, pitch, energy, mel_target, duration_predictor_target, pitch_target, energy_target):
+        mel_loss = self.mse_loss(mel, mel_target)
+
+        duration_predictor_loss = self.l1_loss(duration_predicted,
+                                               duration_predictor_target.float())
+        
+        pitch_loss = self.l1_loss(torch.mean(pitch, -1), pitch_target)
+        energy_loss = self.l1_loss(torch.mean(energy, -1), energy_target)
+
+        return mel_loss, duration_predictor_loss, pitch_loss, energy_loss
 
 model = FastSpeech2.load_FastSpeech2(None, model_config, train_config.device)
 
@@ -345,25 +364,6 @@ scheduler = OneCycleLR(optimizer, **{
     "max_lr": train_config.learning_rate,
     "pct_start": 0.1
 })
-
-class FastSpeechLoss(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.mse_loss = nn.MSELoss()
-        self.l1_loss = nn.L1Loss()
-
-    def forward(self, mel, duration_predicted, pitch, energy, mel_target, duration_predictor_target, pitch_target, energy_target):
-        mel_loss = self.mse_loss(mel, mel_target)
-
-        duration_predictor_loss = self.l1_loss(duration_predicted,
-                                               duration_predictor_target.float())
-        
-        pitch_loss = self.l1_loss(torch.mean(pitch, -1), pitch_target)
-        energy_loss = self.l1_loss(torch.mean(energy, -1), energy_target)
-
-        return mel_loss, duration_predictor_loss, pitch_loss, energy_loss
-
-
 
 logger = WanDBWriter(train_config)
 

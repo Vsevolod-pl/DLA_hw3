@@ -441,7 +441,6 @@ class VarianceAdaptor(nn.Module):
         output2 = output + pitch_embedding
         energy_prediction, energy_embedding = self.get_energy_embedding(output, energy_target, energy_alpha)
         output3 = output2 + energy_embedding
-        print(pitch_alpha, energy_alpha)
         
         return output3, duration_predictor_output, pitch_prediction, energy_prediction
 
